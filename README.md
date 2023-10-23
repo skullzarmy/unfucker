@@ -81,3 +81,11 @@ pytest
 ```
 
 This will discover and run all the test cases in the project. If everything is set up correctly, you should see output indicating the number of passed tests.
+
+## Contributing to Unfucker Python Package
+
+Hey there, awesome human! Interested in contributing to Unfucker? That's fuckin' great! 🎉 Before you dive into the code, make sure to read our [Contributing Guidelines](./CONTRIBUTING.md) and our rather entertaining [Code of Conduct](./CODE_OF_CONDUCT.md).
+
+Whether it's submitting a bug report, proposing a new feature, or creating a pull request, every contribution is valuable and appreciated. 🙏
+
+Let's build something badass together! 👩‍💻👨‍💻
