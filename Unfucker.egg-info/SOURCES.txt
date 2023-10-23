@@ -1,0 +1,8 @@
+README.md
+setup.py
+Unfucker.egg-info/PKG-INFO
+Unfucker.egg-info/SOURCES.txt
+Unfucker.egg-info/dependency_links.txt
+Unfucker.egg-info/entry_points.txt
+Unfucker.egg-info/top_level.txt
+tests/test_unfucker.py

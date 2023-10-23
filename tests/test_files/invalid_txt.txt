@@ -1,0 +1,2 @@
+This is an invalid text
+file with some unprintable characters: 
