@@ -28,6 +28,9 @@ jobs:
                   cd docs
                   make html
 
+            - name: List files in _build
+              run: ls -R ./docs/_build/html
+
             - name: Upload Artifacts
               uses: actions/upload-artifact@v3
               with:
