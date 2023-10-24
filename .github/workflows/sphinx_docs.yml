@@ -18,18 +18,19 @@ jobs:
               with:
                   python-version: "3.x"
 
-            - name: Install Sphinx and Theme
-              run: |
-                  pip install Sphinx
-                  pip install sphinx_rtd_theme
+            - name: Install Sphinx
+              run: pip install Sphinx
 
             - name: Build Docs
               run: |
                   cd docs
                   make html
 
-            - name: List files in _build
-              run: ls -R ./docs/_build/html
+            - name: Check Symlinks
+              run: find ./docs/_build/html -type l
+
+            - name: Check Artifact Size
+              run: du -sh ./docs/_build/html
 
             - name: Upload Artifacts
               uses: actions/upload-artifact@v3
@@ -50,5 +51,5 @@ jobs:
               id: deployment
               uses: actions/deploy-pages@v2
               with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
+                  token: ${{ secrets.REPO_TOKEN }}
                   artifact_name: github-pages
