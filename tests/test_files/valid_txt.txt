@@ -1,2 +1,0 @@
-This is a valid text file.
-It has multiple lines.
