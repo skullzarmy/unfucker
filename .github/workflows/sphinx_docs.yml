@@ -50,6 +50,6 @@ jobs:
               id: deployment
               uses: actions/deploy-pages@v2
               with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
+                  token: ${{ secrets.REPO_TOKEN }}
                   branch: gh-pages # Deploy to this branch
                   artifact_name: github-pages
