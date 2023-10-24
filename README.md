@@ -19,14 +19,10 @@ You can then either manually copy the file to your project directory or add the 
 
 ## Dependencies
 
-Make sure you install the required dependencies, if not already available:
-
--   chardet
-
-Install using pip:
+The project dependencies are listed in the requirements.txt file. To install them, run the following command:
 
 ```bash
-pip install chardet
+pip install -r requirements.txt
 ```
 
 ## Usage
