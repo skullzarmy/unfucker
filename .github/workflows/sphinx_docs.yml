@@ -50,5 +50,5 @@ jobs:
               id: deployment
               uses: actions/deploy-pages@v2
               with:
-                  token: ${{ secrets.REPO_TOKEN }}
+                  token: ${{ secrets.GITHUB_TOKEN }}
                   artifact_name: github-pages
