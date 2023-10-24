@@ -8,14 +8,29 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Installation
 
-As this package is not yet available on PyPI, you can install it locally by cloning the repository.
+Since this package is not yet available on PyPI, you can install it locally by cloning the repository and using pip. Follow the steps below:
+
+1. Clone the repository:
 
 ```bash
-git clone https://github.com/skullzarmy/unfucker
+git clone https://github.com/skullzarmy/unfucker.git
+```
+
+2. Navigate to the project directory:
+
+```bash
 cd unfucker
 ```
 
-You can then either manually copy the file to your project directory or add the path to your PYTHONPATH environment variable.
+3. Install the package locally:
+
+```bash
+pip install -e .
+```
+
+By using pip install -e ., you're performing an "editable" install, which means changes to the source code will immediately affect the installed package without needing a reinstallation.
+
+Now, you can import the package in your Python scripts without having to manipulate your PYTHONPATH.
 
 ## Dependencies
 
