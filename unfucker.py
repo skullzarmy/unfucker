@@ -8,11 +8,25 @@ from typing import Any, Optional, Tuple
 logging.basicConfig(level=logging.INFO)
 
 class Unfucker:
+    """Class for fixing corrupted or malformed text files."""
+
     def __init__(self, file_path: str):
+        """
+        Initialize the Unfucker class with a file path.
+        
+        :param file_path: Path to the file to be unfucked
+        :type file_path: str
+        """
         self.file_path = file_path
         self.file_type = self._identify_file_type()
 
     def _identify_file_type(self) -> str:
+        """
+        Identify the file type of the given file based on its MIME type or extension.
+
+        :return: The identified file type
+        :rtype: str
+        """
         mime_type, _ = mimetypes.guess_type(self.file_path)
         
         if mime_type == 'application/json':
@@ -25,6 +39,16 @@ class Unfucker:
         return file_extension.lower()[1:]
 
     def save_to_file(self, content: Any, file_path: str, overwrite: bool) -> None:
+        """
+        Save content to a file.
+        
+        :param content: Content to be saved
+        :type content: Any
+        :param file_path: Path where the content should be saved
+        :type file_path: str
+        :param overwrite: Whether to overwrite the file if it already exists
+        :type overwrite: bool
+        """
         if os.path.exists(file_path) and not overwrite:
             logging.error("File already exists. Use --overwrite to overwrite the existing file.")
             return
@@ -34,6 +58,12 @@ class Unfucker:
         logging.info(f"Saved unfucked content to {file_path}")
 
     def unfuck(self) -> Tuple[Optional[Any], Optional[str]]:
+        """
+        Unfuck the file content.
+        
+        :return: A tuple containing the unfucked content and an error message, if any
+        :rtype: Tuple[Optional[Any], Optional[str]]
+        """
         try:
             with open(self.file_path, 'r') as f:
                 file_content = f.read()
@@ -47,6 +77,14 @@ class Unfucker:
             return None, f"File type {self.file_type} not supported"
 
     def _unfuck_json(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
+        """
+        Unfuck JSON file content.
+        
+        :param file_content: The original JSON content
+        :type file_content: str
+        :return: A tuple containing the unfucked JSON content and an error message, if any
+        :rtype: Tuple[Optional[Any], Optional[str]]
+        """
         import json
 
         # Replace missing or extra commas
@@ -75,6 +113,14 @@ class Unfucker:
             return None, f"Could not unfuck JSON: {e}"
 
     def _unfuck_xml(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
+        """
+        Unfuck XML file content.
+        
+        :param file_content: The original XML content
+        :type file_content: str
+        :return: A tuple containing the unfucked XML content and an error message, if any
+        :rtype: Tuple[Optional[Any], Optional[str]]
+        """
         import xml.etree.ElementTree as ET
         import re
 
@@ -115,6 +161,14 @@ class Unfucker:
 
 
     def _unfuck_txt(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
+        """
+        Unfuck plain text file content.
+        
+        :param file_content: The original text content
+        :type file_content: str
+        :return: A tuple containing the unfucked text content and an error message, if any
+        :rtype: Tuple[Optional[Any], Optional[str]]
+        """
         import chardet  # For encoding detection
         from collections import Counter
 
@@ -171,6 +225,16 @@ class Unfucker:
 
 
 def unfuck(file_path: str, output_path: Optional[str], overwrite: bool):
+    """
+    The main function for unfucking files.
+    
+    :param file_path: Path to the file to be unfucked
+    :type file_path: str
+    :param output_path: Path where to save the unfucked file
+    :type output_path: Optional[str]
+    :param overwrite: Whether to overwrite the file if it already exists
+    :type overwrite: bool
+    """
     unfucker = Unfucker(file_path)
     fixed_content, error = unfucker.unfuck()
 
