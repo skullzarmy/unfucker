@@ -31,12 +31,6 @@ jobs:
             - name: List files in _build
               run: ls -R ./docs/_build/html
 
-            - name: Check Symlinks
-              run: find ./docs/_build/html -type l
-
-            - name: Check Artifact Size
-              run: du -sh ./docs/_build/html
-
             - name: Upload Artifacts
               uses: actions/upload-artifact@v3
               with:
@@ -57,4 +51,5 @@ jobs:
               uses: actions/deploy-pages@v2
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
+                  branch: gh-pages # Deploy to this branch
                   artifact_name: github-pages
