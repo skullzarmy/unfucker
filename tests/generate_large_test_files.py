@@ -6,8 +6,7 @@ import os
 def generate_large_json(filename):
     data = {"people": []}
 
-    # Each object is about 100 bytes. 100,000 objects will give ~10MB file.
-    for i in range(100000):
+    for i in range(145000):
         person = {
             "id": i,
             "name": f"Name_{i}",
@@ -22,8 +21,7 @@ def generate_large_json(filename):
 def generate_large_xml(filename):
     root = Element("people")
 
-    # Adding ~50,000 people should generate an XML file of about 10MB
-    for i in range(50000):
+    for i in range(100000):
         person = SubElement(root, "person")
         id_ = SubElement(person, "id")
         id_.text = str(i)
