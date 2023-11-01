@@ -70,6 +70,10 @@ else:
 Alternatively, you can run the script from the command line:
 
 ```bash
+unfucker path/to/your/file.json -o path/to/save/fixed/file.json --overwrite
+```
+
+```bash
 python unfucker.py path/to/your/file.json -o path/to/save/fixed/file.json --overwrite
 ```
 
