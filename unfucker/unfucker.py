@@ -259,25 +259,18 @@ def unfuck_entry():
     parser.add_argument("-o", "--output", type=str, help="Path to save the unfucked file", default=None)
     parser.add_argument("--overwrite", help="Overwrite the output file if it exists", action="store_true")
     parser.add_argument("-p", "--passes", type=int, help="Maximum passes over file trying to unfuck it. Ignored in txt files. - - Default: 10.", default=10)
-    if 'help' in sys.argv:
-        # Open 'assets/unfucker.txt' and print it (ASCII art logo)
-        try:
-            with open('assets/unfucker.txt', 'r') as f:
-                ascii_art = f.read()
-                print(ascii_art)
-        except FileNotFoundError:
-            print("ASCII art logo not found.")
-        
-        parser.print_help()
-        return
-    args = parser.parse_args()
-    unfuck(args.file_path, args.output, args.overwrite, args.passes)
-
-if __name__ == "__main__":
+    # Open 'assets/unfucker.txt' and print it (ASCII art logo)
     try:
         with open('assets/unfucker.txt', 'r') as f:
             ascii_art = f.read()
             print(ascii_art)
     except FileNotFoundError:
         print("ASCII art logo not found.")
+    if 'help' in sys.argv:
+        parser.print_help()
+        return
+    args = parser.parse_args()
+    unfuck(args.file_path, args.output, args.overwrite, args.passes)
+
+if __name__ == "__main__":
     unfuck_entry()
