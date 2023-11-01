@@ -1,2 +1,2 @@
 [console_scripts]
-unfucker = Unfucker.unfucker:unfuck
+unfucker = unfucker.unfucker:unfuck_entry

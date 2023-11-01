@@ -7,7 +7,7 @@ setup(
     install_requires=[],
     entry_points={
         'console_scripts': [
-            'unfucker=Unfucker.unfucker:unfuck',  
+            'unfucker=unfucker.unfucker:unfuck_entry',
         ],
     }
 )

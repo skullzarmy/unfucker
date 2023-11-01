@@ -1,9 +1,12 @@
 import os
 import argparse
 import mimetypes
+import json
 import re
 import logging
 from typing import Any, Optional, Tuple
+from xml.etree.ElementTree import fromstring, ParseError
+import chardet  # For encoding detection
 
 logging.basicConfig(level=logging.INFO)
 
@@ -11,44 +14,21 @@ class Unfucker:
     """Class for fixing corrupted or malformed text files."""
 
     def __init__(self, file_path: str):
-        """
-        Initialize the Unfucker class with a file path.
-        
-        :param file_path: Path to the file to be unfucked
-        :type file_path: str
-        """
         self.file_path = file_path
         self.file_type = self._identify_file_type()
 
     def _identify_file_type(self) -> str:
-        """
-        Identify the file type of the given file based on its MIME type or extension.
-
-        :return: The identified file type
-        :rtype: str
-        """
         mime_type, _ = mimetypes.guess_type(self.file_path)
         
         if mime_type == 'application/json':
             return 'json'
         elif mime_type == 'application/xml':
             return 'xml'
-        # Extend for more file types
 
         _, file_extension = os.path.splitext(self.file_path)
         return file_extension.lower()[1:]
 
     def save_to_file(self, content: Any, file_path: str, overwrite: bool) -> None:
-        """
-        Save content to a file.
-        
-        :param content: Content to be saved
-        :type content: Any
-        :param file_path: Path where the content should be saved
-        :type file_path: str
-        :param overwrite: Whether to overwrite the file if it already exists
-        :type overwrite: bool
-        """
         if os.path.exists(file_path) and not overwrite:
             logging.error("File already exists. Use --overwrite to overwrite the existing file.")
             return
@@ -58,107 +38,114 @@ class Unfucker:
         logging.info(f"Saved unfucked content to {file_path}")
 
     def unfuck(self) -> Tuple[Optional[Any], Optional[str]]:
-        """
-        Unfuck the file content.
-        
-        :return: A tuple containing the unfucked content and an error message, if any
-        :rtype: Tuple[Optional[Any], Optional[str]]
-        """
         try:
             with open(self.file_path, 'r') as f:
                 file_content = f.read()
         except Exception as e:
-            return None, f"Could not read file: {e}"
+            logging.exception("Could not read file")
+            return None, str(e)
 
         unfuck_func = getattr(self, f'_unfuck_{self.file_type}', None)
         if unfuck_func:
             return unfuck_func(file_content)
         else:
+            logging.warning(f"File type {self.file_type} not supported")
             return None, f"File type {self.file_type} not supported"
 
     def _unfuck_json(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
-        """
-        Unfuck JSON file content.
-        
-        :param file_content: The original JSON content
-        :type file_content: str
-        :return: A tuple containing the unfucked JSON content and an error message, if any
-        :rtype: Tuple[Optional[Any], Optional[str]]
-        """
-        import json
+        MAX_ITERATIONS = 10
+        for _ in range(MAX_ITERATIONS):
+            orig_content = file_content
 
-        # Replace missing or extra commas
-        file_content = re.sub(r',\s*}', '}', file_content)
-        file_content = re.sub(r',\s*]', ']', file_content)
+            # Remove comments
+            file_content = re.sub(r'//.*?\n', '\n', file_content)
+            file_content = re.sub(r'/\*.*?\*/', '', file_content, flags=re.DOTALL)
 
-        # Add missing closing brackets or braces
-        open_braces = file_content.count('{')
-        close_braces = file_content.count('}')
-        open_brackets = file_content.count('[')
-        close_brackets = file_content.count(']')
+            # Handle escape characters
+            file_content = re.sub(r'(?<!\\)\\(?!["\\/bfnrtu])', r'\\\\', file_content)
 
-        file_content += '}' * (open_braces - close_braces)
-        file_content += ']' * (open_brackets - close_brackets)
+            # Insert missing commas between objects and arrays
+            file_content = re.sub(r'(\}\s*\{)', r'}, {', file_content)
+            file_content = re.sub(r'(\]\s*\[)', r'], [', file_content)
+            
+            # Insert missing commas between key-value pairs
+            file_content = re.sub(r'(":\s*[^,\s\]\}]+)(\s*["\{\[])', r'\1, \2', file_content)
 
-        # Quote unquoted keys
-        file_content = re.sub(r'([{,]\s*)(")?([a-zA-Z_][a-zA-Z_0-9]*)(")?\s*:', r'\1"\3":', file_content)
+            # Regular expression-based corrections
+            file_content = re.sub(r',\s*}', '}', file_content)
+            file_content = re.sub(r',\s*]', ']', file_content)
+            file_content = re.sub(r'([{,]\s*)(")?([a-zA-Z_][a-zA-Z_0-9]*)(")?\s*:', r'\1"\3":', file_content)
+            file_content = re.sub(r':\s*([^"\d\[\]{},\s]+)([,\]})])', r': "\1"\2', file_content)
 
-        # Quote unquoted string values
-        file_content = re.sub(r':\s*([^"\d\[\]{},\s]+)([,\]})])', r': "\1"\2', file_content)
+            # Bracket/Brace corrections
+            open_braces = file_content.count('{')
+            close_braces = file_content.count('}')
+            open_brackets = file_content.count('[')
+            close_brackets = file_content.count(']')
+            file_content += '}' * (open_braces - close_braces)
+            file_content += ']' * (open_brackets - close_brackets)
 
-        try:
-            fixed_content = json.loads(file_content)
-            return fixed_content, None
-        except json.JSONDecodeError as e:
-            return None, f"Could not unfuck JSON: {e}"
+            if file_content == orig_content:
+                break
 
+            try:
+                fixed_content = json.loads(file_content)
+                return fixed_content, None
+            except json.JSONDecodeError:
+                logging.warning("JSONDecodeError encountered")
+                continue
+
+        logging.error(f"Could not unfuck JSON after {MAX_ITERATIONS} iterations.")
+        return None, f"Could not unfuck JSON after {MAX_ITERATIONS} iterations."
+    
     def _unfuck_xml(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
-        """
-        Unfuck XML file content.
-        
-        :param file_content: The original XML content
-        :type file_content: str
-        :return: A tuple containing the unfucked XML content and an error message, if any
-        :rtype: Tuple[Optional[Any], Optional[str]]
-        """
-        import xml.etree.ElementTree as ET
-        import re
+        MAX_ITERATIONS = 10
+        for _ in range(MAX_ITERATIONS):
+            orig_content = file_content
 
-        # Remove invalid characters
-        file_content = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', file_content)
+            # Remove invalid characters
+            file_content = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', file_content)
 
-        # Fix missing attribute quotes
-        file_content = re.sub(r'(<\w+ \w+)=([^\s>]+)', r'\1="\2"', file_content)
+            # Fix missing attribute quotes
+            file_content = re.sub(r'(<\w+ \w+)=([^\s>]+)', r'\1="\2"', file_content)
 
-        # Fix mismatched or unclosed tags
-        stack = []
-        offset = 0
-        for match in re.finditer(r'<(/?)(\w+)', file_content):
-            tag = match.group(2)
-            is_closing = bool(match.group(1))
+            # Unescape entities
+            file_content = file_content.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
 
-            if is_closing:
-                if stack and stack[-1] == tag:
-                    stack.pop()
+            # Fix mismatched or unclosed tags
+            stack = []
+            offset = 0
+            for match in re.finditer(r'<(/?)(\w+)', file_content):
+                tag = match.group(2)
+                is_closing = bool(match.group(1))
+
+                if is_closing:
+                    if stack and stack[-1] == tag:
+                        stack.pop()
+                    else:
+                        # Extra closing tag found; remove it
+                        start, end = match.span()
+                        file_content = file_content[:start + offset] + file_content[end + offset:]
+                        offset -= (end - start)
                 else:
-                    # Extra closing tag found; remove it
-                    start, end = match.span()
-                    file_content = file_content[:start + offset] + file_content[end + offset:]
-                    offset -= (end - start)
-            else:
-                stack.append(tag)
+                    stack.append(tag)
 
-        # Add missing closing tags at the end
-        for tag in reversed(stack):
-            file_content += f'</{tag}>'
+            # Add missing closing tags at the end
+            for tag in reversed(stack):
+                file_content += f'</{tag}>'
 
-        try:
-            # Try parsing the modified XML string
-            ET.fromstring(file_content)
-            return file_content, None
-        except ET.ParseError as e:
-            return None, f"Could not unfuck XML: {e}"
+            if file_content == orig_content:
+                break
 
+            try:
+                fromstring(file_content)
+                return file_content, None
+            except ParseError:
+                logging.warning("XML ParseError encountered")
+                continue
+
+        logging.error(f"Could not unfuck XML after {MAX_ITERATIONS} iterations.")
+        return None, f"Could not unfuck XML after {MAX_ITERATIONS} iterations."
 
     def _unfuck_txt(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
         """
@@ -222,31 +209,20 @@ class Unfucker:
 
         return file_content, None
 
-
-
 def unfuck(file_path: str, output_path: Optional[str], overwrite: bool):
-    """
-    The main function for unfucking files.
-    
-    :param file_path: Path to the file to be unfucked
-    :type file_path: str
-    :param output_path: Path where to save the unfucked file
-    :type output_path: Optional[str]
-    :param overwrite: Whether to overwrite the file if it already exists
-    :type overwrite: bool
-    """
     unfucker = Unfucker(file_path)
     fixed_content, error = unfucker.unfuck()
 
     if fixed_content is not None:
+        serialized_content = json.dumps(fixed_content) if unfucker.file_type == 'json' else str(fixed_content)
         if output_path:
-            unfucker.save_to_file(str(fixed_content), output_path, overwrite)
+            unfucker.save_to_file(serialized_content, output_path, overwrite)
         else:
-            print(f"Unfucked content: {fixed_content}")
+            print(f"Unfucked content: {serialized_content}")
     else:
         logging.error(f"Error: {error}")
 
-if __name__ == "__main__":
+def unfuck_entry():
     parser = argparse.ArgumentParser(description="Unfuck corrupted or malformed text files.")
     parser.add_argument("file_path", type=str, help="Path to the file to be unfucked")
     parser.add_argument("-o", "--output", type=str, help="Path to save the unfucked file", default=None)
@@ -254,3 +230,6 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     unfuck(args.file_path, args.output, args.overwrite)
+
+if __name__ == "__main__":
+    unfuck_entry()
