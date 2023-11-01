@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import mimetypes
 import json
@@ -13,9 +14,10 @@ logging.basicConfig(level=logging.INFO)
 class Unfucker:
     """Class for fixing corrupted or malformed text files."""
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, max_iterations: int = 10):
         self.file_path = file_path
         self.file_type = self._identify_file_type()
+        self.max_iterations = max_iterations
 
     def _identify_file_type(self) -> str:
         mime_type, _ = mimetypes.guess_type(self.file_path)
@@ -37,20 +39,35 @@ class Unfucker:
             f.write(content)
         logging.info(f"Saved unfucked content to {file_path}")
 
-    def unfuck(self) -> Tuple[Optional[Any], Optional[str]]:
-        try:
-            with open(self.file_path, 'r') as f:
-                file_content = f.read()
-        except Exception as e:
-            logging.exception("Could not read file")
-            return None, str(e)
+    def _retry_open_file(self, num_retries: int = 3) -> Tuple[Optional[str], Optional[str]]:
+        for i in range(num_retries):
+            try:
+                with open(self.file_path, 'r') as f:
+                    return f.read(), None
+            except Exception as e:
+                logging.warning(f"Could not read file on attempt {i + 1}: {e}")
 
-        unfuck_func = getattr(self, f'_unfuck_{self.file_type}', None)
-        if unfuck_func:
-            return unfuck_func(file_content)
+        return None, "Reached maximum retry attempts for reading the file"
+
+    def unfuck(self) -> Tuple[Optional[Any], Optional[str]]:
+        if self.file_type == "txt":
+            # Special case for text files, we do not read the content here
+            unfuck_func = self._unfuck_txt
+            if unfuck_func:
+                return unfuck_func(None)
         else:
-            logging.warning(f"File type {self.file_type} not supported")
-            return None, f"File type {self.file_type} not supported"
+            # For other file types, we attempt to read the file first
+            file_content, err = self._retry_open_file()
+            if err:
+                logging.exception("Could not read file")
+                return None, err
+
+            unfuck_func = getattr(self, f'_unfuck_{self.file_type}', None)
+            if unfuck_func:
+                return unfuck_func(file_content)
+
+        logging.warning(f"File type {self.file_type} not supported")
+        return None, f"File type {self.file_type} not supported"
 
     def _unfuck_json(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
         if not file_content.strip():
@@ -67,10 +84,9 @@ class Unfucker:
             logging.warning(f"File content length: {len(file_content)}")
             pass
 
-        MAX_ITERATIONS = 10
         previous_id = id(file_content)
 
-        for _ in range(MAX_ITERATIONS):
+        for _ in range(self.max_iterations):
 
             # Remove comments
             file_content = re.sub(r'//.*?\n', '\n', file_content)
@@ -127,8 +143,8 @@ class Unfucker:
         except ParseError:
             pass
 
-        MAX_ITERATIONS = 10
-        for _ in range(MAX_ITERATIONS):
+        for _ in range(self.max_iterations):
+
             orig_content = file_content
 
             # Remove invalid characters
@@ -188,56 +204,44 @@ class Unfucker:
         logging.error(f"Could not unfuck XML after {MAX_ITERATIONS} iterations.")
         return None, f"Could not unfuck XML after {MAX_ITERATIONS} iterations."
 
-    def _unfuck_txt(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
-        # Step 1: Try to read the file using utf-8
-        try:
-            with open(self.file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            return content, None
-        except UnicodeDecodeError:
-            pass  # Continue to the next recovery steps
-        except Exception as e:
-            return None, f"Unknown error occurred: {e}"
-
-        # Step 2: Detect file encoding
-        with open(self.file_path, 'rb') as f:
-            result = chardet.detect(f.read())
-        encoding_type = result['encoding']
-
-        # Step 3: Try to read the file using detected encoding
-        try:
-            with open(self.file_path, 'r', encoding=encoding_type) as f:
-                content = f.read()
-            return content, None
-        except UnicodeDecodeError:
-            pass  # Continue to the next recovery steps
-        except Exception as e:
-            return None, f"Unknown error occurred: {e}"
-
-        # Step 4: Attempt binary read and decode line by line
-        decoded_lines = []
+    def _unfuck_txt(self, _: str) -> Tuple[Optional[Any], Optional[str]]:
+        # Step 1: Detect encoding
         try:
             with open(self.file_path, 'rb') as f:
-                lines = f.readlines()
-            for line in lines:
-                try:
-                    decoded_line = line.decode(encoding_type)
-                    decoded_lines.append(decoded_line)
-                except UnicodeDecodeError:
-                    decoded_line = line.decode(encoding_type, errors='replace')
-                    decoded_lines.append(decoded_line)
+                result = chardet.detect(f.read())
+            encoding_type = result['encoding']
         except Exception as e:
-            return None, f"Could not read the binary file: {e}"
+            return None, f"Could not detect file encoding: {e}"
 
-        # Step 5: Text Cleaning
-        file_content = "".join(decoded_lines)
+        # If chardet couldn't detect the encoding, use utf-8 as a fallback
+        if encoding_type is None:
+            encoding_type = 'utf-8'
+
+        # Step 2: Read and decode file content
+        decoded_content = []
+        try:
+            with open(self.file_path, 'rb') as f:
+                while True:
+                    char = f.read(1)
+                    if not char:
+                        break
+                    try:
+                        decoded_char = char.decode(encoding_type)
+                        decoded_content.append(decoded_char)
+                    except UnicodeDecodeError:
+                        decoded_content.append('?')  # Replace the offending character
+        except Exception as e:
+            return None, f"Unknown error occurred: {e}"
+
+        # Step 3: Text Cleaning
+        file_content = "".join(decoded_content)
         file_content = ''.join(filter(lambda x: x in set(
             "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]_^`{|}~ \t\n\r"), file_content))
 
         return file_content, None
 
-def unfuck(file_path: str, output_path: Optional[str], overwrite: bool):
-    unfucker = Unfucker(file_path)
+def unfuck(file_path: str, output_path: Optional[str], overwrite: bool, max_iterations: int):
+    unfucker = Unfucker(file_path, max_iterations)
     fixed_content, error = unfucker.unfuck()
 
     if fixed_content is not None:
@@ -254,9 +258,12 @@ def unfuck_entry():
     parser.add_argument("file_path", type=str, help="Path to the file to be unfucked")
     parser.add_argument("-o", "--output", type=str, help="Path to save the unfucked file", default=None)
     parser.add_argument("--overwrite", help="Overwrite the output file if it exists", action="store_true")
-    
+    parser.add_argument("-p", "--passes", type=int, help="Maximum passes over file trying to unfuck it. Ignored in txt files. - - Default: 10.", default=10)
+    if 'help' in sys.argv:
+        parser.print_help()
+        return
     args = parser.parse_args()
-    unfuck(args.file_path, args.output, args.overwrite)
+    unfuck(args.file_path, args.output, args.overwrite, args.passes)
 
 if __name__ == "__main__":
     unfuck_entry()
