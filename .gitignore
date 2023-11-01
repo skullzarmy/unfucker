@@ -6,3 +6,4 @@ build/
 dist/
 requirements-dev.txt
 tests/test_files/large*
+tests/test_files/non_utf8.txt
