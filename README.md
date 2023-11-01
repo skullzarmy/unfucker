@@ -74,7 +74,7 @@ unfucker path/to/your/file.json -o path/to/save/fixed/file.json --overwrite
 ```
 
 ```bash
-python unfucker.py path/to/your/file.json -o path/to/save/fixed/file.json --overwrite
+python path/to/unfucker.py path/to/your/file.json -o path/to/save/fixed/file.json --overwrite
 ```
 
 -   `path/to/your/file.json` is the path to the file you want to fix.
