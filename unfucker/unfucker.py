@@ -53,9 +53,24 @@ class Unfucker:
             return None, f"File type {self.file_type} not supported"
 
     def _unfuck_json(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
+        if not file_content.strip():
+            logging.error("JSON file is empty.")
+            return None, "JSON file is empty."
+            
+        try:
+            valid_json = json.loads(file_content)
+            return valid_json, None
+        except json.JSONDecodeError as e:
+            logging.warning(f"Initial JSON validation failed. Error: {str(e)}")
+            logging.warning(f"File content starts with: {file_content[:100]}")
+            logging.warning(f"File content ends with: {file_content[-100:]}")
+            logging.warning(f"File content length: {len(file_content)}")
+            pass
+
         MAX_ITERATIONS = 10
+        previous_id = id(file_content)
+
         for _ in range(MAX_ITERATIONS):
-            orig_content = file_content
 
             # Remove comments
             file_content = re.sub(r'//.*?\n', '\n', file_content)
@@ -67,7 +82,7 @@ class Unfucker:
             # Insert missing commas between objects and arrays
             file_content = re.sub(r'(\}\s*\{)', r'}, {', file_content)
             file_content = re.sub(r'(\]\s*\[)', r'], [', file_content)
-            
+
             # Insert missing commas between key-value pairs
             file_content = re.sub(r'(":\s*[^,\s\]\}]+)(\s*["\{\[])', r'\1, \2', file_content)
 
@@ -85,8 +100,10 @@ class Unfucker:
             file_content += '}' * (open_braces - close_braces)
             file_content += ']' * (open_brackets - close_brackets)
 
-            if file_content == orig_content:
+            # Check for changes in the content
+            if id(file_content) == previous_id:
                 break
+            previous_id = id(file_content)
 
             try:
                 fixed_content = json.loads(file_content)
@@ -97,8 +114,19 @@ class Unfucker:
 
         logging.error(f"Could not unfuck JSON after {MAX_ITERATIONS} iterations.")
         return None, f"Could not unfuck JSON after {MAX_ITERATIONS} iterations."
+
     
     def _unfuck_xml(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
+        if not file_content.strip():
+            logging.error("XML file is empty.")
+            return None, "XML file is empty."
+
+        try:
+            fromstring(file_content)
+            return file_content, None
+        except ParseError:
+            pass
+
         MAX_ITERATIONS = 10
         for _ in range(MAX_ITERATIONS):
             orig_content = file_content
@@ -112,27 +140,40 @@ class Unfucker:
             # Unescape entities
             file_content = file_content.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
 
-            # Fix mismatched or unclosed tags
+            # Fix unclosed tags
+            file_content = re.sub(r'<(\w+)(.*?)(?<!/)>', r'<\1\2>', file_content)
+
             stack = []
-            offset = 0
+            new_content = []
+            last_pos = 0
+
             for match in re.finditer(r'<(/?)(\w+)', file_content):
                 tag = match.group(2)
                 is_closing = bool(match.group(1))
 
+                new_content.append(file_content[last_pos:match.start()])
+
                 if is_closing:
                     if stack and stack[-1] == tag:
+                        new_content.append(file_content[match.start():match.end() + 1])
                         stack.pop()
                     else:
-                        # Extra closing tag found; remove it
-                        start, end = match.span()
-                        file_content = file_content[:start + offset] + file_content[end + offset:]
-                        offset -= (end - start)
+                        # Extra closing tag; skip it
+                        pass
                 else:
-                    stack.append(tag)
+                    new_content.append(file_content[match.start():match.end() + 1])
+                    if not file_content[match.end():].startswith('/'):
+                        stack.append(tag)
 
-            # Add missing closing tags at the end
+                last_pos = match.end() + 1
+
+            new_content.append(file_content[last_pos:])
+
+            # Add missing closing tags
             for tag in reversed(stack):
-                file_content += f'</{tag}>'
+                new_content.append(f'</{tag}>')
+
+            file_content = ''.join(new_content)
 
             if file_content == orig_content:
                 break
@@ -148,62 +189,48 @@ class Unfucker:
         return None, f"Could not unfuck XML after {MAX_ITERATIONS} iterations."
 
     def _unfuck_txt(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
-        """
-        Unfuck plain text file content.
-        
-        :param file_content: The original text content
-        :type file_content: str
-        :return: A tuple containing the unfucked text content and an error message, if any
-        :rtype: Tuple[Optional[Any], Optional[str]]
-        """
-        import chardet  # For encoding detection
-        from collections import Counter
-
-        # Step 1: Try to read the file in the standard way first
+        # Step 1: Try to read the file using utf-8
         try:
             with open(self.file_path, 'r', encoding='utf-8') as f:
-                file_content = f.read()
-            return file_content, None
-        except Exception as e:
+                content = f.read()
+            return content, None
+        except UnicodeDecodeError:
             pass  # Continue to the next recovery steps
+        except Exception as e:
+            return None, f"Unknown error occurred: {e}"
 
-        # Step 2: Attempt binary read and per-line decoding with utf-8
+        # Step 2: Detect file encoding
+        with open(self.file_path, 'rb') as f:
+            result = chardet.detect(f.read())
+        encoding_type = result['encoding']
+
+        # Step 3: Try to read the file using detected encoding
+        try:
+            with open(self.file_path, 'r', encoding=encoding_type) as f:
+                content = f.read()
+            return content, None
+        except UnicodeDecodeError:
+            pass  # Continue to the next recovery steps
+        except Exception as e:
+            return None, f"Unknown error occurred: {e}"
+
+        # Step 4: Attempt binary read and decode line by line
         decoded_lines = []
         try:
             with open(self.file_path, 'rb') as f:
                 lines = f.readlines()
             for line in lines:
                 try:
-                    decoded_line = line.decode('utf-8')
+                    decoded_line = line.decode(encoding_type)
                     decoded_lines.append(decoded_line)
                 except UnicodeDecodeError:
-                    pass
+                    decoded_line = line.decode(encoding_type, errors='replace')
+                    decoded_lines.append(decoded_line)
         except Exception as e:
             return None, f"Could not read the binary file: {e}"
 
-        # Step 3: If Step 2 fails, try to detect encoding and decode accordingly
-        if not decoded_lines:
-            with open(self.file_path, 'rb') as f:
-                result = chardet.detect(f.read())
-            try:
-                encoding_type = result['encoding']
-                with open(self.file_path, 'r', encoding=encoding_type) as f:
-                    file_content = f.read()
-                return file_content, None
-            except Exception as e:
-                return None, f"Failed to decode with detected encoding: {e}"
-
-        # Check if decoded_lines is empty (all lines were corrupted)
-        if not decoded_lines:
-            return None, "The file appears to be irreparably fucked."
-
-        # Step 4: Text Cleaning - Only applied if previous steps succeeded
+        # Step 5: Text Cleaning
         file_content = "".join(decoded_lines)
-
-        # Remove duplicate lines
-        file_content = "\n".join(dict.fromkeys(file_content.split("\n")))
-
-        # Remove any non-printable characters
         file_content = ''.join(filter(lambda x: x in set(
             "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]_^`{|}~ \t\n\r"), file_content))
 
