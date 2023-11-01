@@ -254,16 +254,30 @@ def unfuck(file_path: str, output_path: Optional[str], overwrite: bool, max_iter
         logging.error(f"Error: {error}")
 
 def unfuck_entry():
-    parser = argparse.ArgumentParser(description="Unfuck corrupted or malformed text files.")
+    parser = argparse.ArgumentParser(description="Unfuck corrupted or malformed txt, XML, and JSON files.")
     parser.add_argument("file_path", type=str, help="Path to the file to be unfucked")
     parser.add_argument("-o", "--output", type=str, help="Path to save the unfucked file", default=None)
     parser.add_argument("--overwrite", help="Overwrite the output file if it exists", action="store_true")
     parser.add_argument("-p", "--passes", type=int, help="Maximum passes over file trying to unfuck it. Ignored in txt files. - - Default: 10.", default=10)
     if 'help' in sys.argv:
+        # Open 'assets/unfucker.txt' and print it (ASCII art logo)
+        try:
+            with open('assets/unfucker.txt', 'r') as f:
+                ascii_art = f.read()
+                print(ascii_art)
+        except FileNotFoundError:
+            print("ASCII art logo not found.")
+        
         parser.print_help()
         return
     args = parser.parse_args()
     unfuck(args.file_path, args.output, args.overwrite, args.passes)
 
 if __name__ == "__main__":
+    try:
+        with open('assets/unfucker.txt', 'r') as f:
+            ascii_art = f.read()
+            print(ascii_art)
+    except FileNotFoundError:
+        print("ASCII art logo not found.")
     unfuck_entry()
