@@ -44,11 +44,11 @@ Unfucker is a Python utility for repairing corrupted or malformed text files. It
 
 If you are looking to do a lot of unfucking, you may be interested in the [**Unfucker API**](https://github.com/skullzarmy/unfucker-api)
 
-## License
+## 📜 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## Installation
+## 🛠 Installation
 
 Since this package is not yet available on PyPI, you can install it locally by cloning the repository and using pip. Follow the steps below:
 
@@ -82,9 +82,9 @@ The project dependencies are listed in the requirements.txt file. To install the
 pip install -r requirements.txt
 ```
 
-## Usage
+## 🎈 Usage
 
-### Importing into a Script
+### 📄 Importing into a Script
 
 To use Unfucker in a Python script, simply import the class and use it as follows:
 
@@ -107,7 +107,7 @@ else:
     print(f"Could not unfuck the file: {error}")
 ```
 
-### Command-Line Interface
+### 🛠️ Command-Line Interface
 
 Alternatively, you can run the script from the command line:
 
@@ -123,11 +123,11 @@ python path/to/unfucker.py path/to/your/file.json -o path/to/save/fixed/file.jso
 -   `-o path/to/save/fixed/file.json` specifies where to save the fixed content.
 -   `--overwrite` allows you to overwrite the output file if it already exists.
 
-### API
+### 🛜 API
 
 [**Unfucker API**](https://github.com/skullzarmy/unfucker-api) inherits the capability to automatically fix syntax errors, missing attributes, or encoding issues in your files. Crafted with Flask and optimized for Docker, this API is perfect for those looking to add automated unfucking to their tech stacks.
 
-## Running Tests
+## 🧪 Running Tests
 
 This project uses pytest for testing. To run the tests locally, you'll need to install pytest if you haven't already:
 
@@ -143,7 +143,7 @@ pytest
 
 This will discover and run all the test cases in the project. If everything is set up correctly, you should see output indicating the number of passed tests.
 
-## Contributing to Unfucker Python Package
+## 🤝 Contributing to Unfucker Python Package
 
 Hey there, awesome human! Interested in contributing to Unfucker? That's fuckin' great! 🎉 Before you dive into the code, make sure to read our [Contributing Guidelines](./CONTRIBUTING.md) and our rather entertaining [Code of Conduct](./CODE_OF_CONDUCT.md).
 
