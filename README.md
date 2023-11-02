@@ -42,6 +42,8 @@ Y8a.    .a8P  88       88   88     "8a,   ,a88  "8a,   ,aa  88`"Yba,  "8b,   ,aa
 
 Unfucker is a Python utility for repairing corrupted or malformed text files. It currently supports JSON, XML, and TXT formats. It provides functionalities to automatically fix syntax errors, missing attributes, or encoding issues in these files.
 
+If you are looking to do a lot of unfucking, you may be interested in the [**Unfucker API**](https://github.com/skullzarmy/unfucker-api)
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
@@ -120,6 +122,10 @@ python path/to/unfucker.py path/to/your/file.json -o path/to/save/fixed/file.jso
 -   `path/to/your/file.json` is the path to the file you want to fix.
 -   `-o path/to/save/fixed/file.json` specifies where to save the fixed content.
 -   `--overwrite` allows you to overwrite the output file if it already exists.
+
+### API
+
+[**Unfucker API**](https://github.com/skullzarmy/unfucker-api) inherits the capability to automatically fix syntax errors, missing attributes, or encoding issues in your files. Crafted with Flask and optimized for Docker, this API is perfect for those looking to add automated unfucking to their tech stacks.
 
 ## Running Tests
 
