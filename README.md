@@ -44,6 +44,20 @@ Unfucker is a Python utility for repairing corrupted or malformed text files. It
 
 If you are looking to do a lot of unfucking, you may be interested in the [**Unfucker API**](https://github.com/skullzarmy/unfucker-api)
 
+[![SoCalTechLab.com logo - click to visit](./assets/sctl_xs_rounded_white_text.webp)](https://socaltechlab.com/?rel=unfuckerApiGitHubRepo)
+
+[a SoCalTechLab.com project](https://socaltechlab.com/?rel=unfuckerApiGitHubRepo)
+
+Feel free to send a few unfuck requests at my implementation here https://unfucker.socaltechlab.com/unfuck
+
+```bash
+curl -X POST "https://unfucker.socaltechlab.com/unfuck" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "file_content": "{ \"key\": \"value\" }"
+      }'
+```
+
 ## 📜 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
