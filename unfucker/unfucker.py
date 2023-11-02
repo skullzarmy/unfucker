@@ -21,7 +21,13 @@ class Unfucker:
         self.max_iterations = max_iterations
 
     def _identify_file_type(self) -> str:
-        # Step 1: Use python-magic to identify the file type
+        # Step 1: First check the file extension
+        _, file_extension = os.path.splitext(self.file_path)
+        file_extension = file_extension.lower()[1:]
+        if file_extension in ['json', 'xml', 'txt']:
+            return file_extension
+
+        # Step 2: Use python-magic to identify the file type
         try:
             with open(self.file_path, "rb") as f:
                 file_content = f.read(2048)
@@ -39,7 +45,7 @@ class Unfucker:
         except Exception as e:
             logging.warning(f"File type detection using magic failed: {e}")
 
-        # Step 2: Fall back to mimetypes
+        # Step 3: Fall back to mimetypes
         mime_type, _ = mimetypes.guess_type(self.file_path)
         if mime_type == 'application/json':
             return 'json'
@@ -47,12 +53,6 @@ class Unfucker:
             return 'xml'
         elif mime_type == 'text/plain':
             return 'txt'
-
-        # Step 3: Last resort, use the file extension
-        _, file_extension = os.path.splitext(self.file_path)
-        file_extension = file_extension.lower()[1:]
-        if file_extension in ['json', 'xml', 'txt']:
-            return file_extension
 
         # Step 4: Default to 'txt' if nothing else worked
         logging.warning("Could not confidently determine file type, defaulting to 'txt'")
