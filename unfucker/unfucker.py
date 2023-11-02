@@ -106,10 +106,7 @@ class Unfucker:
             valid_json = json.loads(file_content)
             return valid_json, None
         except json.JSONDecodeError as e:
-            logging.warning(f"Initial JSON validation failed. Error: {str(e)}")
-            logging.warning(f"File content starts with: {file_content[:100]}")
-            logging.warning(f"File content ends with: {file_content[-100:]}")
-            logging.warning(f"File content length: {len(file_content)}")
+            logging.warning(f"JSON confirmed fucked. Proceeding to try to unfuck. Initial error: {str(e)}")
             pass
 
         previous_id = id(file_content)
