@@ -156,8 +156,8 @@ class Unfucker:
                 logging.warning("JSONDecodeError encountered")
                 continue
 
-        logging.error(f"Could not unfuck JSON after {MAX_ITERATIONS} iterations.")
-        return None, f"Could not unfuck JSON after {MAX_ITERATIONS} iterations."
+        logging.error(f"Could not unfuck JSON after {self.max_iterations} iterations.")
+        return None, f"Could not unfuck JSON after {self.max_iterations} iterations."
 
     
     def _unfuck_xml(self, file_content: str) -> Tuple[Optional[Any], Optional[str]]:
@@ -229,8 +229,8 @@ class Unfucker:
                 logging.warning("XML ParseError encountered")
                 continue
 
-        logging.error(f"Could not unfuck XML after {MAX_ITERATIONS} iterations.")
-        return None, f"Could not unfuck XML after {MAX_ITERATIONS} iterations."
+        logging.error(f"Could not unfuck XML after {self.max_iterations} iterations.")
+        return None, f"Could not unfuck XML after {self.max_iterations} iterations."
 
     def _unfuck_txt(self, _: str) -> Tuple[Optional[Any], Optional[str]]:
         # Step 1: Detect encoding
