@@ -15,15 +15,18 @@ logging.basicConfig(level=logging.INFO)
 class Unfucker:
     """Class for fixing corrupted or malformed text files."""
 
-    def __init__(self, file_path: str, max_iterations: int = 10):
+    def __init__(self, file_path: str, file_type: str = None, max_iterations: int = 10):
         self.file_path = file_path
-        self.file_type = self._identify_file_type()
+        self.file_type = self._identify_file_type(file_type)
         self.max_iterations = max_iterations
 
-    def _identify_file_type(self) -> str:
+    def _identify_file_type(self, file_type: str = None) -> str:
         # Step 1: First check the file extension
-        _, file_extension = os.path.splitext(self.file_path)
-        file_extension = file_extension.lower()[1:]
+        if file_type:
+            file_extension = file_type
+        else :
+            _, file_extension = os.path.splitext(self.file_path)
+            file_extension = file_extension.lower()[1:]
         if file_extension in ['json', 'xml', 'txt']:
             return file_extension
 
