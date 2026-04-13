@@ -11,7 +11,7 @@ setup(
         'iniconfig==2.0.0',
         'packaging==23.2',
         'pluggy==1.3.0',
-        'pytest==7.4.2',
+        'pytest==9.0.3',
         'tomli==2.0.1',
         'python-magic==0.4.27',
     ],
